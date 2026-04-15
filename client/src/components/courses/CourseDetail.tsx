@@ -1,0 +1,478 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../features/store';
+import courseService from '../../services/courseService';
+import lectureService from '../../services/lectureService';
+import paymentService from '../../services/paymentService';
+import LoadingSpinner from '../ui/LoadingSpinner';
+import Button from '../ui/Button';
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
+const CourseDetail: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user } = useSelector((state: RootState) => state.auth);
+
+  const [course, setCourse] = useState<any>(null);
+  const [lectures, setLectures] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [enrolled, setEnrolled] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [review, setReview] = useState('');
+
+  useEffect(() => {
+    const fetchCourseDetails = async () => {
+      try {
+        setLoading(true);
+        if (!id) return;
+
+        const courseData = await courseService.getCourseById(id);
+        setCourse(courseData);
+
+        // Check if user is enrolled
+        if (user) {
+          try {
+            const lecturesData = await lectureService.getCourseLectures(id);
+            setLectures(lecturesData);
+            setEnrolled(true);
+          } catch (error: any) {
+            if (error.response && error.response.status !== 403) {
+              setError('Failed to fetch course data. Please try again.');
+            } else {
+              // 403 means user is not enrolled, which is expected if not enrolled
+              setEnrolled(false);
+            }
+          }
+        }
+
+        setLoading(false);
+      } catch (error) {
+        setError('Failed to fetch course data. Please try again.');
+        setLoading(false);
+      }
+    };
+
+    fetchCourseDetails();
+  }, [id, user]);
+
+  const handleEnrollment = async () => {
+    if (!user) {
+      navigate('/login', { state: { from: `/courses/${id}` } });
+      return;
+    }
+
+    try {
+      setPaymentLoading(true);
+      const orderData = await paymentService.createOrder(id!);
+
+      const options = {
+        key: 'rzp_test_your_key_here', // Replace with your actual key
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: 'LMS Platform',
+        description: `Enrollment for ${course.title}`,
+        order_id: orderData.id,
+        handler: async function (response: any) {
+          try {
+            const paymentData = {
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+              courseId: id!,
+            };
+
+            const result = await paymentService.verifyPayment(paymentData);
+            if (result.success) {
+              setEnrolled(true);
+              const lecturesData = await lectureService.getCourseLectures(id!);
+              setLectures(lecturesData);
+            }
+          } catch (error) {
+            setError('Payment verification failed. Please contact support.');
+          }
+          setPaymentLoading(false);
+        },
+        prefill: {
+          name: user?.name,
+          email: user?.email,
+        },
+        theme: {
+          color: '#6366F1',
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    } catch (error) {
+      setError('Failed to process enrollment. Please try again later.');
+      setPaymentLoading(false);
+    }
+  };
+
+  const handleRatingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      await courseService.addCourseRating(id!, { rating, review });
+      setShowRatingModal(false);
+
+      // Refresh course data to show updated rating
+      const courseData = await courseService.getCourseById(id!);
+      setCourse(courseData);
+    } catch (error) {
+      setError('Failed to submit rating. Please try again.');
+    }
+  };
+
+  if (loading) return <LoadingSpinner />;
+
+  if (error) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="rounded-md bg-red-50 p-4">
+          <p className="text-red-700">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!course) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="rounded-md bg-yellow-50 p-4">
+          <p className="text-yellow-700">Course not found.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const renderInstructorName = () => {
+    if (typeof course.instructor === 'string') {
+      return 'Instructor';
+    }
+    return course.instructor.name;
+  };
+
+  return (
+    <>
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          {/* Course Details */}
+          <div className="lg:col-span-2">
+            <div className="mb-6">
+              <h1 className="mb-2 text-3xl font-bold text-gray-900">{course.title}</h1>
+              <p className="text-lg text-gray-600">{course.description}</p>
+            </div>
+
+            <div className="mb-6 flex flex-wrap items-center gap-4 text-sm text-gray-600">
+              <div className="flex items-center">
+                <svg
+                  className="mr-1 h-5 w-5 text-gray-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path>
+                </svg>
+                <span>Created by {renderInstructorName()}</span>
+              </div>
+              <div className="flex items-center">
+                <svg
+                  className="mr-1 h-5 w-5 text-gray-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                    clipRule="evenodd"
+                  ></path>
+                </svg>
+                <span>{course.duration}</span>
+              </div>
+              <div className="flex items-center">
+                <svg
+                  className="mr-1 h-5 w-5 text-gray-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                    clipRule="evenodd"
+                  ></path>
+                </svg>
+                <span>Last updated {new Date(course.updatedAt).toLocaleDateString()}</span>
+              </div>
+              <div className="flex items-center">
+                <svg
+                  className="mr-1 h-5 w-5 text-gray-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
+                </svg>
+                <span className="rounded-full bg-primary-100 px-2 py-1 text-primary-800">
+                  {course.level}
+                </span>
+              </div>
+              <div className="flex items-center">
+                <div className="flex items-center">
+                  {[...Array(5)].map((_, i) => (
+                    <svg
+                      key={i}
+                      className={`h-5 w-5 ${
+                        i < Math.floor(course.avgRating || 0)
+                          ? 'text-yellow-400'
+                          : 'text-gray-300'
+                      }`}
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                    </svg>
+                  ))}
+                  <span className="ml-1 text-sm text-gray-500">
+                    {course.avgRating ? course.avgRating.toFixed(1) : 'No ratings yet'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {enrolled && (
+              <div className="mb-8">
+                <h2 className="mb-4 text-2xl font-bold text-gray-900">Course Content</h2>
+                <div className="rounded-lg border border-gray-200">
+                  {lectures && lectures.length > 0 ? (
+                    <div className="divide-y divide-gray-200">
+                      {lectures.map((lecture: any) => (
+                        <div key={lecture._id} className="p-4">
+                          <div className="flex justify-between">
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900">{lecture.title}</h3>
+                              <p className="text-sm text-gray-600">{lecture.description}</p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-gray-500">{Math.floor(lecture.duration / 60)}:{lecture.duration % 60 < 10 ? `0${lecture.duration % 60}` : lecture.duration % 60}</span>
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => navigate(`/learn/lecture/${lecture._id}`)}
+                              >
+                                Watch
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-gray-500">
+                      No lectures available yet.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {enrolled && (
+              <div className="mb-8">
+                <h2 className="mb-4 text-2xl font-bold text-gray-900">Rate This Course</h2>
+                <Button onClick={() => setShowRatingModal(true)}>Add Rating & Review</Button>
+              </div>
+            )}
+          </div>
+
+          {/* Enrollment/Preview Card */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-20 rounded-lg border border-gray-200 bg-white p-6 shadow-md">
+              <div className="mb-4 overflow-hidden rounded-lg">
+                <img
+                  src={`http://localhost:5000/uploads/thumbnails/${course.thumbnail}`}
+                  alt={course.title}
+                  className="h-48 w-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = 'https://via.placeholder.com/640x360?text=Course+Image';
+                  }}
+                />
+              </div>
+              <div className="mb-4 text-center text-3xl font-bold text-primary-600">₹{course.price}</div>
+
+              {enrolled ? (
+                <Button
+                  variant="success"
+                  fullWidth
+                  disabled
+                >
+                  Already Enrolled
+                </Button>
+              ) : (
+                <Button
+                  variant="primary"
+                  fullWidth
+                  onClick={handleEnrollment}
+                  disabled={paymentLoading}
+                >
+                  {paymentLoading ? 'Processing...' : 'Enroll Now'}
+                </Button>
+              )}
+
+              <div className="mt-6 space-y-4">
+                <h3 className="text-lg font-semibold">This course includes:</h3>
+                <ul className="space-y-2">
+                  <li className="flex items-center">
+                    <svg
+                      className="mr-2 h-5 w-5 text-green-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M5 13l4 4L19 7"
+                      ></path>
+                    </svg>
+                    <span>Full lifetime access</span>
+                  </li>
+                  <li className="flex items-center">
+                    <svg
+                      className="mr-2 h-5 w-5 text-green-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M5 13l4 4L19 7"
+                      ></path>
+                    </svg>
+                    <span>Access on mobile and TV</span>
+                  </li>
+                  <li className="flex items-center">
+                    <svg
+                      className="mr-2 h-5 w-5 text-green-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M5 13l4 4L19 7"
+                      ></path>
+                    </svg>
+                    <span>Certificate of completion</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Rating Modal */}
+      {showRatingModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+            <span className="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">
+              &#8203;
+            </span>
+            <div className="inline-block transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:align-middle">
+              <form onSubmit={handleRatingSubmit}>
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mt-3 w-full text-center sm:mt-0 sm:text-left">
+                      <h3 className="text-lg font-medium leading-6 text-gray-900">Rate This Course</h3>
+                      <div className="mt-4">
+                        <div className="mb-4">
+                          <label className="mb-1 block text-sm font-medium text-gray-700">Rating</label>
+                          <div className="flex">
+                            {[1, 2, 3, 4, 5].map((value) => (
+                              <svg
+                                key={value}
+                                className={`h-8 w-8 cursor-pointer ${
+                                  value <= rating ? 'text-yellow-400' : 'text-gray-300'
+                                }`}
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                                xmlns="http://www.w3.org/2000/svg"
+                                onClick={() => setRating(value)}
+                              >
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                              </svg>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="mb-4">
+                          <label htmlFor="review" className="mb-1 block text-sm font-medium text-gray-700">
+                            Review
+                          </label>
+                          <textarea
+                            id="review"
+                            rows={4}
+                            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm"
+                            placeholder="Share your experience with this course..."
+                            value={review}
+                            onChange={(e) => setReview(e.target.value)}
+                          ></textarea>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                  <button
+                    type="submit"
+                    className="inline-flex w-full justify-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
+                    disabled={rating === 0}
+                  >
+                    Submit Rating
+                  </button>
+                  <button
+                    type="button"
+                    className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                    onClick={() => setShowRatingModal(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default CourseDetail;
