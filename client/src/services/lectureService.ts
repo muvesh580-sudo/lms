@@ -6,11 +6,13 @@ export interface Lecture {
   title: string;
   description: string;
   course: string;
-  videoUrl: string;
   duration: number;
   order: number;
   resources: Resource[];
   isPreview: boolean;
+  // Locked lectures (not enrolled, not a preview) have no playable URLs
+  locked: boolean;
+  videoStreamUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -18,7 +20,7 @@ export interface Lecture {
 export interface Resource {
   _id: string;
   title: string;
-  fileUrl: string;
+  downloadUrl?: string;
   fileType: 'pdf' | 'doc' | 'ppt' | 'zip' | 'other';
 }
 

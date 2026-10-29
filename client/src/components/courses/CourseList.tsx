@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import courseService, { CourseFilter } from '../../services/courseService';
+import courseService, { Course, CourseFilter } from '../../services/courseService';
 import CourseCard from './CourseCard';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
 const CourseList: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [courses, setCourses] = useState<any[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [totalPages, setTotalPages] = useState(1);
@@ -18,7 +18,8 @@ const CourseList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
 
   // Categories and levels for filters
-  const categories = ['Web Development', 'Mobile Development', 'Data Science', 'Machine Learning', 'DevOps', 'Design', 'Business', 'Marketing'];
+  // Must match the category enum in server/models/courseModel.js
+  const categories = ['Web Development', 'Mobile Development', 'Data Science', 'Machine Learning', 'DevOps', 'Business', 'Design', 'Other'];
   const levels = ['Beginner', 'Intermediate', 'Advanced'];
 
   useEffect(() => {
@@ -37,7 +38,7 @@ const CourseList: React.FC = () => {
         setCourses(response.courses);
         setTotalPages(response.pages);
         setLoading(false);
-      } catch (error) {
+      } catch {
         setError('Failed to fetch courses. Please try again later.');
         setLoading(false);
       }
@@ -48,7 +49,7 @@ const CourseList: React.FC = () => {
 
   useEffect(() => {
     // Update URL with filters
-    const params: any = {};
+    const params: Record<string, string> = {};
     if (keyword) params.keyword = keyword;
     if (category) params.category = category;
     if (level) params.level = level;

@@ -56,6 +56,8 @@ const lectureSchema = new mongoose.Schema(
   }
 );
 
+lectureSchema.index({ course: 1, order: 1 });
+
 const Lecture = mongoose.model('Lecture', lectureSchema);
 
 export default Lecture;

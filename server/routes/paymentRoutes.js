@@ -14,9 +14,10 @@ const router = express.Router();
 router.post('/create-order', protect, createOrder);
 router.post('/verify', protect, verifyPayment);
 router.get('/history', protect, getPaymentHistory);
-router.get('/:id', protect, getPaymentById);
 
-// Admin route
+// Admin route - must come before `/:id`, otherwise "admin" is treated as an id
 router.get('/admin', protect, authorize('admin'), getAllPayments);
+
+router.get('/:id', protect, getPaymentById);
 
 export default router;

@@ -6,13 +6,18 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String,
       required: [true, 'Please add a name'],
+      trim: true,
+      maxlength: [100, 'Name cannot be more than 100 characters'],
     },
     email: {
       type: String,
       required: [true, 'Please add an email'],
       unique: true,
+      lowercase: true,
+      trim: true,
+      // The previous pattern rejected valid addresses such as `a+b@x.com` or `.info` domains
       match: [
-        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+        /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/,
         'Please add a valid email',
       ],
     },
@@ -37,8 +42,8 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: 'default-profile.png',
     },
-    resetPasswordToken: String,
-    resetPasswordExpire: Date,
+    resetPasswordToken: { type: String, select: false },
+    resetPasswordExpire: { type: Date, select: false },
   },
   {
     timestamps: true,
@@ -46,9 +51,10 @@ const userSchema = new mongoose.Schema(
 );
 
 // Encrypt password using bcrypt
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
+  // Only hash when the password changed; otherwise every save re-hashes the hash
   if (!this.isModified('password')) {
-    next();
+    return;
   }
 
   const salt = await bcrypt.genSalt(10);

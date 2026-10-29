@@ -20,6 +20,7 @@ const courseSchema = new mongoose.Schema(
     price: {
       type: Number,
       required: [true, 'Please add a course price'],
+      min: [0, 'Price cannot be negative'],
     },
     thumbnail: {
       type: String,
@@ -99,6 +100,9 @@ courseSchema.virtual('lectures', {
   foreignField: 'course',
   justOne: false,
 });
+
+courseSchema.index({ published: 1, createdAt: -1 });
+courseSchema.index({ instructor: 1 });
 
 // Calculate average rating when saving
 courseSchema.pre('save', function (next) {

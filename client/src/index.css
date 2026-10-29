@@ -1,1 +1,26 @@
 @import "tailwindcss";
+
+/* The UI is designed for a light background; without this, dark-mode browsers
+   render dark text on a dark canvas on pages that don't set their own background */
+html {
+  color-scheme: light;
+}
+
+body {
+  background-color: #fff;
+  color: #111827;
+}
+
+/* The components use a `primary-*` palette that Tailwind does not ship by default */
+@theme {
+  --color-primary-50: #eef2ff;
+  --color-primary-100: #e0e7ff;
+  --color-primary-200: #c7d2fe;
+  --color-primary-300: #a5b4fc;
+  --color-primary-400: #818cf8;
+  --color-primary-500: #6366f1;
+  --color-primary-600: #4f46e5;
+  --color-primary-700: #4338ca;
+  --color-primary-800: #3730a3;
+  --color-primary-900: #312e81;
+}

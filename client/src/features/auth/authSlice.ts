@@ -1,8 +1,9 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import authService, { LoginCredentials, RegisterData, UserResponse } from '../../services/authService';
+import { errorMessage } from '../../services/config';
 
-// Get user from localStorage
-const user = JSON.parse(localStorage.getItem('user') || 'null');
+// Get user from localStorage (ignore corrupt data instead of crashing on load)
+const user = authService.getCurrentUser();
 
 interface AuthState {
   user: UserResponse | null;
@@ -26,10 +27,8 @@ export const register = createAsyncThunk(
   async (userData: RegisterData, thunkAPI) => {
     try {
       return await authService.register(userData);
-    } catch (error: any) {
-      const message =
-        error.response?.data?.message || error.message || 'Something went wrong';
-      return thunkAPI.rejectWithValue(message);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(errorMessage(error));
     }
   }
 );
@@ -40,10 +39,8 @@ export const login = createAsyncThunk(
   async (credentials: LoginCredentials, thunkAPI) => {
     try {
       return await authService.login(credentials);
-    } catch (error: any) {
-      const message =
-        error.response?.data?.message || error.message || 'Something went wrong';
-      return thunkAPI.rejectWithValue(message);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(errorMessage(error));
     }
   }
 );

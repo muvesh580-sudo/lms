@@ -12,17 +12,17 @@ const paymentSchema = new mongoose.Schema(
       ref: 'Course',
       required: true,
     },
+    // Set once the payment is verified; a pending record only has the order id
     razorpayPaymentId: {
       type: String,
-      required: true,
     },
     razorpayOrderId: {
       type: String,
       required: true,
+      unique: true,
     },
     razorpaySignature: {
       type: String,
-      required: true,
     },
     amount: {
       type: Number,

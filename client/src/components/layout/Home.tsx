@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import courseService from '../../services/courseService';
+import courseService, { Course } from '../../services/courseService';
 import CourseCard from '../courses/CourseCard';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
 const Home: React.FC = () => {
-  const [featuredCourses, setFeaturedCourses] = useState<any[]>([]);
+  const [featuredCourses, setFeaturedCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -16,7 +16,7 @@ const Home: React.FC = () => {
         const response = await courseService.getCourses();
         setFeaturedCourses(response.courses);
         setLoading(false);
-      } catch (error) {
+      } catch {
         setError('Failed to fetch featured courses');
         setLoading(false);
       }

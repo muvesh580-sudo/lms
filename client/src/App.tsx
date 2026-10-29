@@ -1,7 +1,8 @@
 import { JSX } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { RootState } from './features/store'
+import { Role } from './services/config'
 
 import Layout from './components/layout/Layout'
 
@@ -11,40 +12,36 @@ import Register from './components/auth/Register'
 
 import CourseList from './components/courses/CourseList'
 import CourseDetail from './components/courses/CourseDetail'
+import MyCourses from './components/student/MyCourses'
+import LectureView from './components/student/LectureView'
 
-const StudentRoute = ({ children }: { children: JSX.Element }) => {
-  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth)
+// Route guards only improve UX - the API enforces the same rules server-side
+const RoleRoute = ({ children, roles }: { children: JSX.Element; roles?: Role[] }) => {
+  const { user } = useSelector((state: RootState) => state.auth)
+  const location = useLocation()
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  }
+
+  if (roles && !roles.includes(user.role)) {
+    return <Navigate to="/" replace />
   }
 
   return children
 }
 
-const InstructorRoute = ({ children }: { children: JSX.Element }) => {
-  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth)
+const StudentRoute = ({ children }: { children: JSX.Element }) => <RoleRoute>{children}</RoleRoute>
 
-  if (!isAuthenticated || user?.role !== 'instructor') {
-    return <Navigate to="/login" replace />
-  }
+const InstructorRoute = ({ children }: { children: JSX.Element }) => (
+  <RoleRoute roles={['instructor', 'admin']}>{children}</RoleRoute>
+)
 
-  return children
-}
-
-const AdminRoute = ({ children }: { children: JSX.Element }) => {
-  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth)
-
-  if (!isAuthenticated || user?.role !== 'admin') {
-    return <Navigate to="/login" replace />
-  }
-
-  return children
-}
+const AdminRoute = ({ children }: { children: JSX.Element }) => (
+  <RoleRoute roles={['admin']}>{children}</RoleRoute>
+)
 
 function App() {
-  // You can add global effects here, like checking for stored auth token on app load
-
   return (
     <Routes>
       {/* Public routes wrapped in the main layout */}
@@ -58,21 +55,14 @@ function App() {
         <Route path="contact" element={<div className="p-10 text-center">Contact Page</div>} />
 
         {/* Student routes */}
-        <Route path="student/dashboard" element={
-          <StudentRoute>
-            <div className="p-10 text-center">Student Dashboard</div>
-          </StudentRoute>
-        } />
+        <Route path="student/dashboard" element={<Navigate to="/my-courses" replace />} />
         <Route path="my-courses" element={
           <StudentRoute>
-            <div className="p-10 text-center">My Courses</div>
+            <MyCourses />
           </StudentRoute>
         } />
-        <Route path="learn/lecture/:id" element={
-          <StudentRoute>
-            <div className="p-10 text-center">Lecture View</div>
-          </StudentRoute>
-        } />
+        {/* Preview lectures are public; the API decides what each user may watch */}
+        <Route path="learn/lecture/:id" element={<LectureView />} />
         <Route path="profile" element={
           <StudentRoute>
             <div className="p-10 text-center">User Profile</div>

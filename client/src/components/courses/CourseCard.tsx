@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Course } from '../../services/courseService';
+import { thumbnailUrl, PLACEHOLDER_IMAGE } from '../../services/config';
 
 interface CourseCardProps {
   course: Course;
@@ -19,12 +20,12 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
       <div className="relative">
         <Link to={`/courses/${course._id}`}>
           <img
-            src={`http://localhost:5000/uploads/thumbnails/${course.thumbnail}`}
+            src={thumbnailUrl(course.thumbnail)}
             alt={course.title}
             className="h-48 w-full object-cover"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = 'https://via.placeholder.com/640x360?text=Course+Image';
+              target.src = PLACEHOLDER_IMAGE;
             }}
           />
         </Link>
@@ -89,7 +90,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-xl font-bold text-primary-600">₹{course.price}</span>
+            <span className="text-xl font-bold text-primary-600">{course.price > 0 ? `₹${course.price}` : 'Free'}</span>
             <Link
               to={`/courses/${course._id}`}
               className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"

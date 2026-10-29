@@ -1,4 +1,6 @@
 import api from './api';
+import { Role } from './config';
+import { Course } from './courseService';
 
 // Types
 export interface LoginCredentials {
@@ -16,8 +18,18 @@ export interface UserResponse {
   _id: string;
   name: string;
   email: string;
-  role: 'student' | 'instructor' | 'admin';
+  role: Role;
+  profilePic?: string;
   token: string;
+}
+
+export interface UserProfile {
+  _id: string;
+  name: string;
+  email: string;
+  role: Role;
+  profilePic?: string;
+  enrolledCourses: Course[];
 }
 
 // Authentication services
@@ -49,13 +61,13 @@ const authService = {
   },
 
   // Get user profile
-  getUserProfile: async (): Promise<any> => {
+  getUserProfile: async (): Promise<UserProfile> => {
     const response = await api.get('/users/profile');
     return response.data;
   },
 
   // Update user profile
-  updateProfile: async (userData: any): Promise<any> => {
+  updateProfile: async (userData: FormData | Partial<RegisterData>): Promise<UserResponse> => {
     const response = await api.put('/users/profile', userData);
     if (response.data) {
       localStorage.setItem('user', JSON.stringify(response.data));
@@ -72,8 +84,12 @@ const authService = {
 
   // Get current user
   getCurrentUser: (): UserResponse | null => {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+    try {
+      const user = localStorage.getItem('user');
+      return user ? JSON.parse(user) : null;
+    } catch {
+      return null;
+    }
   },
 };
 

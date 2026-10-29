@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { dashboardPath } from '../../services/config';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -27,7 +28,10 @@ const Register: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
-  const { user, isLoading, isError, isSuccess, message } = useSelector(
+  const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from;
+
+  const { user, isLoading, isError, message } = useSelector(
     (state: RootState) => state.auth
   );
 
@@ -40,20 +44,18 @@ const Register: React.FC = () => {
   });
 
   useEffect(() => {
-    if (isError) {
-      // Handle error (could add toast notification here)
-      console.error(message);
+    // If registration successful or already logged in, go to the user's start page
+    if (user) {
+      navigate(from || dashboardPath(user.role), { replace: true });
     }
+  }, [user, from, navigate]);
 
-    // If registration successful or already logged in, redirect to dashboard
-    if (isSuccess || user) {
-      navigate('/dashboard');
-    }
-
+  // Clear any previous error when leaving the page
+  useEffect(() => {
     return () => {
       dispatch(reset());
     };
-  }, [user, isError, isSuccess, message, navigate, dispatch]);
+  }, [dispatch]);
 
   const onSubmit = (data: RegisterFormValues) => {
     const { name, email, password } = data;
@@ -71,12 +73,13 @@ const Register: React.FC = () => {
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Create a new account</h2>
           <p className="mt-2 text-sm text-gray-600">
             Or{' '}
-            <a
-              onClick={() => navigate('/login')}
-              className="cursor-pointer font-medium text-primary-600 hover:text-primary-500"
+            <Link
+              to="/login"
+              state={{ from }}
+              className="font-medium text-primary-600 hover:text-primary-500"
             >
               sign in to your existing account
-            </a>
+            </Link>
           </p>
         </div>
 

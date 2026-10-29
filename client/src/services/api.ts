@@ -1,8 +1,7 @@
 import axios from 'axios';
+import { API_URL } from './config';
 
 // Create axios instance with base URL
-const API_URL = 'http://localhost:5000/api';
-
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -28,8 +27,12 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle session expiry
-    if (error.response?.status === 401) {
+    const url: string = error.config?.url || '';
+    const isAuthRequest = url.includes('/users/login') || url.includes('/users/register');
+
+    // Handle session expiry - but a failed login is not an expired session,
+    // and redirecting there would wipe the "invalid password" message
+    if (error.response?.status === 401 && !isAuthRequest && localStorage.getItem('token')) {
       // Clear session data
       localStorage.removeItem('token');
       localStorage.removeItem('user');

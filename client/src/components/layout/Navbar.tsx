@@ -1,15 +1,17 @@
-import React, {  Fragment } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { Fragment } from 'react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '../../features/store';
+import { API_ORIGIN } from '../../services/config';
 import { logout } from '../../features/auth/authSlice';
 import { Disclosure, Menu, Transition } from '@headlessui/react';
-import { Bars3Icon, XMarkIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, XMarkIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
 
 const navigation = [
-  { name: 'Home', href: '/', current: true },
-  { name: 'Courses', href: '/courses', current: false },
-  { name: 'About', href: '/about', current: false },
-  { name: 'Contact', href: '/contact', current: false },
+  { name: 'Home', href: '/' },
+  { name: 'Courses', href: '/courses' },
+  { name: 'About', href: '/about' },
+  { name: 'Contact', href: '/contact' },
 ];
 
 function classNames(...classes: string[]) {
@@ -18,11 +20,16 @@ function classNames(...classes: string[]) {
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { user, isAuthenticated } = useSelector((state: any) => state.auth);
+  const dispatch = useDispatch<AppDispatch>();
+  const { user } = useSelector((state: RootState) => state.auth);
+  const isAuthenticated = !!user;
 
-  const handleLogout = () => {
-    dispatch(logout());
+  const hasAvatar = user?.profilePic && !user.profilePic.startsWith('default-');
+
+  const handleLogout = async () => {
+    // Wait for the user to be cleared first; otherwise the login page still sees
+    // the old user and bounces through /my-courses with an unauthenticated request
+    await dispatch(logout());
     navigate('/login');
   };
 
@@ -31,11 +38,17 @@ const Navbar: React.FC = () => {
       <div>
         <Menu.Button className="flex rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
           <span className="sr-only">Open user menu</span>
-          <img
-            className="h-8 w-8 rounded-full"
-            src={user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"}
-            alt=""
-          />
+          {hasAvatar ? (
+            <img
+              className="h-8 w-8 rounded-full object-cover"
+              src={`${API_ORIGIN}/uploads/profile/${user!.profilePic}`}
+              alt=""
+            />
+          ) : (
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 font-semibold text-white">
+              {user?.name?.charAt(0).toUpperCase()}
+            </span>
+          )}
         </Menu.Button>
       </div>
       <Transition
@@ -178,49 +191,34 @@ const Navbar: React.FC = () => {
               </div>
               <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
                 <div className="flex flex-shrink-0 items-center">
-                  <Link to="/">
-                    <img
-                      className="h-8 w-auto"
-                      src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500"
-                      alt="LMS"
-                    />
+                  <Link to="/" className="flex items-center">
+                    <AcademicCapIcon className="h-8 w-8 text-primary-400" aria-hidden="true" />
+                    <span className="ml-2 hidden text-xl font-bold text-white sm:block">LMS</span>
+                    <span className="sr-only sm:hidden">LMS home</span>
                   </Link>
-                  <span className="hidden ml-2 text-white text-xl font-bold sm:block">LMS</span>
                 </div>
                 <div className="hidden sm:ml-6 sm:block">
                   <div className="flex space-x-4">
                     {navigation.map((item) => (
-                      <Link
+                      <NavLink
                         key={item.name}
                         to={item.href}
-                        className={classNames(
-                          item.current
-                            ? 'bg-gray-900 text-white'
-                            : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                          'rounded-md px-3 py-2 text-sm font-medium'
-                        )}
-                        aria-current={item.current ? 'page' : undefined}
+                        end={item.href === '/'}
+                        className={({ isActive }) =>
+                          classNames(
+                            isActive ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
+                            'rounded-md px-3 py-2 text-sm font-medium'
+                          )
+                        }
                       >
                         {item.name}
-                      </Link>
+                      </NavLink>
                     ))}
                   </div>
                 </div>
               </div>
 
               <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-                {/* Shopping Cart Icon */}
-                {isAuthenticated && (
-                  <button
-                    type="button"
-                    className="rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
-                    onClick={() => navigate('/cart')}
-                  >
-                    <span className="sr-only">View cart</span>
-                    <ShoppingCartIcon className="h-6 w-6" aria-hidden="true" />
-                  </button>
-                )}
-
                 {/* Profile dropdown */}
                 {isAuthenticated ? authLinks : guestLinks}
               </div>
@@ -230,19 +228,19 @@ const Navbar: React.FC = () => {
           <Disclosure.Panel className="sm:hidden">
             <div className="space-y-1 px-2 pb-3 pt-2">
               {navigation.map((item) => (
-                <Link
+                <NavLink
                   key={item.name}
                   to={item.href}
-                  className={classNames(
-                    item.current
-                      ? 'bg-gray-900 text-white'
-                      : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                    'block rounded-md px-3 py-2 text-base font-medium'
-                  )}
-                  aria-current={item.current ? 'page' : undefined}
+                  end={item.href === '/'}
+                  className={({ isActive }) =>
+                    classNames(
+                      isActive ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
+                      'block rounded-md px-3 py-2 text-base font-medium'
+                    )
+                  }
                 >
                   {item.name}
-                </Link>
+                </NavLink>
               ))}
             </div>
           </Disclosure.Panel>

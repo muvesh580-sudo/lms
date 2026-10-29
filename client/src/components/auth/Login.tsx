@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { dashboardPath } from '../../services/config';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -22,7 +23,10 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
-  const { user, isLoading, isError, isSuccess, message } = useSelector(
+  const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from;
+
+  const { user, isLoading, isError, message } = useSelector(
     (state: RootState) => state.auth
   );
 
@@ -35,20 +39,18 @@ const Login: React.FC = () => {
   });
 
   useEffect(() => {
-    if (isError) {
-      // Handle error (could add toast notification here)
-      console.error(message);
+    // If login successful or already logged in, go back to where the user came from
+    if (user) {
+      navigate(from || dashboardPath(user.role), { replace: true });
     }
+  }, [user, from, navigate]);
 
-    // If login successful or already logged in, redirect to dashboard
-    if (isSuccess || user) {
-      navigate('/dashboard');
-    }
-
+  // Clear any previous error when leaving the page
+  useEffect(() => {
     return () => {
       dispatch(reset());
     };
-  }, [user, isError, isSuccess, message, navigate, dispatch]);
+  }, [dispatch]);
 
   const onSubmit = (data: LoginFormValues) => {
     dispatch(login(data));
@@ -65,12 +67,13 @@ const Login: React.FC = () => {
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
           <p className="mt-2 text-sm text-gray-600">
             Or{' '}
-            <a
-              onClick={() => navigate('/register')}
-              className="cursor-pointer font-medium text-primary-600 hover:text-primary-500"
+            <Link
+              to="/register"
+              state={{ from }}
+              className="font-medium text-primary-600 hover:text-primary-500"
             >
               create a new account
-            </a>
+            </Link>
           </p>
         </div>
 
@@ -121,26 +124,6 @@ const Login: React.FC = () => {
               {errors.password && (
                 <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
               )}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                Remember me
-              </label>
-            </div>
-
-            <div className="text-sm">
-              <a href="#" className="font-medium text-primary-600 hover:text-primary-500">
-                Forgot your password?
-              </a>
             </div>
           </div>
 

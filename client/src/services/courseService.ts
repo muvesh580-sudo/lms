@@ -1,4 +1,5 @@
 import api from './api';
+import { Lecture } from './lectureService';
 
 // Types
 export interface Course {
@@ -13,8 +14,16 @@ export interface Course {
   duration: string;
   avgRating: number;
   published: boolean;
+  enrolledCount?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+// Returned by GET /courses/:id
+export interface CourseDetails extends Course {
+  lectures: Lecture[];
+  isEnrolled: boolean;
+  canManage: boolean;
 }
 
 export interface CourseFormData {
@@ -44,17 +53,15 @@ const courseService = {
   // Get all published courses with pagination and filters
   getCourses: async (filters?: CourseFilter): Promise<{ courses: Course[]; pages: number; count: number }> => {
     const { keyword, category, level, page = 1 } = filters || {};
-    let url = `/courses?pageNumber=${page}`;
-    if (keyword) url += `&keyword=${keyword}`;
-    if (category) url += `&category=${category}`;
-    if (level) url += `&level=${level}`;
-
-    const response = await api.get(url);
+    // axios encodes params, so search text like "C++ & C#" is sent intact
+    const response = await api.get('/courses', {
+      params: { pageNumber: page, keyword: keyword || undefined, category: category || undefined, level: level || undefined },
+    });
     return response.data;
   },
 
   // Get course by ID
-  getCourseById: async (id: string): Promise<Course> => {
+  getCourseById: async (id: string): Promise<CourseDetails> => {
     const response = await api.get(`/courses/${id}`);
     return response.data;
   },
@@ -88,6 +95,12 @@ const courseService = {
   // Get instructor courses
   getInstructorCourses: async (): Promise<Course[]> => {
     const response = await api.get('/courses/instructor/courses');
+    return response.data;
+  },
+
+  // Enroll in a free course
+  enrollFree: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const response = await api.post(`/courses/${id}/enroll`);
     return response.data;
   },
 

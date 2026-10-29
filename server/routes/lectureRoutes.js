@@ -7,15 +7,21 @@ import {
   deleteLecture,
   addLectureResource,
   deleteLectureResource,
+  streamLectureVideo,
+  downloadLectureResource,
 } from '../controllers/lectureController.js';
-import { protect, authorize } from '../middleware/authMiddleware.js';
+import { protect, optionalAuth, authorize } from '../middleware/authMiddleware.js';
 import { uploadVideo, uploadMaterial } from '../middleware/uploadMiddleware.js';
 
 const router = express.Router();
 
-// Get lectures for a course
-router.get('/course/:courseId', getCourseLectures);
-router.get('/:id', protect, getLectureById);
+// Get lectures for a course (previews for everyone, everything for enrolled users)
+router.get('/course/:courseId', optionalAuth, getCourseLectures);
+router.get('/:id', optionalAuth, getLectureById);
+
+// Private files, authorised by a short-lived media token
+router.get('/:id/video', streamLectureVideo);
+router.get('/:id/resources/:resourceId/download', downloadLectureResource);
 
 // Instructor/Admin routes
 router.post('/', protect, authorize('instructor', 'admin'), uploadVideo, createLecture);

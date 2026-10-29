@@ -5,6 +5,7 @@ export interface PaymentOrder {
   id: string;
   currency: string;
   amount: number;
+  keyId: string;
   course: {
     id: string;
     title: string;
