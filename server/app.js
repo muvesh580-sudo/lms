@@ -18,6 +18,12 @@ mongoose.set('sanitizeFilter', true);
 
 const app = express();
 
+// Hosts like Render sit behind one proxy; trust it so rate limiting sees the
+// real client IP instead of putting every visitor in the same bucket
+if (process.env.TRUST_PROXY) {
+  app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1);
+}
+
 // Security headers; images are loaded cross-origin by the Vite client
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
