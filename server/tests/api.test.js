@@ -483,6 +483,24 @@ describe('course deletion', () => {
   });
 });
 
+test('hosted video links are played directly, but stay hidden on locked lectures', async () => {
+  const { toLectureResponse } = await import('../utils/courseAccess.js');
+  const lecture = {
+    _id: new mongoose.Types.ObjectId(),
+    title: 'Hosted',
+    videoUrl: 'https://videos.example/clip.mp4',
+    resources: [],
+  };
+
+  const open = toLectureResponse(lecture, { unlocked: true });
+  assert.equal(open.videoStreamUrl, 'https://videos.example/clip.mp4');
+  assert.equal(open.videoUrl, undefined);
+
+  const locked = toLectureResponse(lecture, { unlocked: false });
+  assert.equal(locked.videoStreamUrl, undefined);
+  assert.equal(locked.videoUrl, undefined);
+});
+
 test('unknown API routes return JSON 404', async () => {
   const res = await request(app).get('/api/does-not-exist');
   assert.equal(res.status, 404);

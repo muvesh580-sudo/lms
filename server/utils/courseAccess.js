@@ -38,6 +38,7 @@ export const verifyMediaToken = (token, lectureId) => {
 // tokenised API URLs, and locked lectures expose no file locations at all
 export const toLectureResponse = (lecture, { unlocked, userId }) => {
   const data = lecture.toObject ? lecture.toObject() : { ...lecture };
+  const { videoUrl } = data;
   delete data.videoUrl;
 
   if (!unlocked) {
@@ -46,10 +47,12 @@ export const toLectureResponse = (lecture, { unlocked, userId }) => {
 
   const token = signMediaToken(data._id, userId);
   const base = `/api/lectures/${data._id}`;
+  // Hosted videos (e.g. the demo seed's) are played directly from their URL
+  const isExternalVideo = /^https?:\/\//.test(videoUrl || '');
   return {
     ...data,
     locked: false,
-    videoStreamUrl: `${base}/video?token=${token}`,
+    videoStreamUrl: isExternalVideo ? videoUrl : `${base}/video?token=${token}`,
     resources: (data.resources || []).map((r) => ({
       _id: r._id,
       title: r.title,

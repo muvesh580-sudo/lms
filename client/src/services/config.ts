@@ -3,8 +3,9 @@ export const API_ORIGIN = (import.meta.env.VITE_API_ORIGIN || 'http://localhost:
 
 export const API_URL = `${API_ORIGIN}/api`;
 
-// Turn a server-relative path (e.g. a lecture's videoStreamUrl) into an absolute URL
-export const apiUrl = (path: string) => `${API_ORIGIN}${path}`;
+// Turn a server-relative path (e.g. a lecture's videoStreamUrl) into an absolute URL;
+// hosted videos already have one
+export const apiUrl = (path: string) => (/^https?:\/\//.test(path) ? path : `${API_ORIGIN}${path}`);
 
 // Inline fallback so a missing thumbnail does not depend on a third-party image host
 export const PLACEHOLDER_IMAGE =

@@ -5,13 +5,10 @@
 // Demo logins (all share DEMO_PASSWORD, default "demo1234"):
 //   instructor@demo.test, student@demo.test
 import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
 import mongoose from 'mongoose';
 import User from '../models/userModel.js';
 import Course from '../models/courseModel.js';
 import Lecture from '../models/lectureModel.js';
-import { uploadDirs } from '../middleware/uploadMiddleware.js';
 
 dotenv.config();
 
@@ -30,10 +27,11 @@ const ensureUser = async (name, email, role) =>
 const instructor = await ensureUser('Demo Instructor', 'instructor@demo.test', 'instructor');
 await ensureUser('Demo Student', 'student@demo.test', 'student');
 
-// Placeholder "video" so lecture records point at a real file (it is not a playable video)
-const demoVideo = 'video-demo-placeholder.mp4';
-const demoVideoPath = path.join(uploadDirs.videos, demoVideo);
-if (!fs.existsSync(demoVideoPath)) fs.writeFileSync(demoVideoPath, 'demo');
+// Public-domain (CC0) sample clip, so demo lectures play on any host without uploads
+const demoVideo = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
+
+// Repair lectures from earlier seeds that pointed at a local placeholder file
+await Lecture.updateMany({ videoUrl: 'video-demo-placeholder.mp4' }, { videoUrl: demoVideo });
 
 const courses = [
   {
