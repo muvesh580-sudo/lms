@@ -12,6 +12,7 @@ import userRoutes from './routes/userRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
 import lectureRoutes from './routes/lectureRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import contactRoutes from './routes/contactRoutes.js';
 
 // Strip `$`-prefixed operators from query filters as a second line of defence
 mongoose.set('sanitizeFilter', true);
@@ -58,6 +59,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/lectures', lectureRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Default route
 app.get('/', (req, res) => {

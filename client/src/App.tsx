@@ -8,6 +8,7 @@ import Layout from './components/layout/Layout'
 
 import Home from './components/layout/Home'
 import About from './components/layout/About'
+import Contact from './components/layout/Contact'
 import Login from './components/auth/Login'
 import Register from './components/auth/Register'
 
@@ -53,7 +54,7 @@ function App() {
         <Route path="courses" element={<CourseList />} />
         <Route path="courses/:id" element={<CourseDetail />} />
         <Route path="about" element={<About />} />
-        <Route path="contact" element={<div className="p-10 text-center">Contact Page</div>} />
+        <Route path="contact" element={<Contact />} />
 
         {/* Student routes */}
         <Route path="student/dashboard" element={<Navigate to="/my-courses" replace />} />

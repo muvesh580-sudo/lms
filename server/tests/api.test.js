@@ -42,6 +42,7 @@ before(async () => {
   process.env.RAZORPAY_KEY_SECRET = 'razorpay-test-secret';
   process.env.UPLOAD_DIR = uploadDir;
   process.env.AUTH_RATE_LIMIT = '1000';
+  process.env.CONTACT_RATE_LIMIT = '50';
   process.env.NODE_ENV = 'test';
 
   ({ default: app } = await import('../app.js'));
@@ -480,6 +481,51 @@ describe('course deletion', () => {
 
     const profile = await request(app).get('/api/users/profile').set(auth('student'));
     assert.ok(profile.body.enrolledCourses.every((c) => c._id !== ids.freeCourse));
+  });
+});
+
+describe('contact messages', () => {
+  const valid = { name: 'Asha', email: 'Asha@Example.com', message: 'I have a question about a course.' };
+
+  test('saves a valid message, and only admins can read messages', async () => {
+    const sent = await request(app).post('/api/contact').send(valid);
+    assert.equal(sent.status, 201);
+
+    const denied = await request(app).get('/api/contact').set(auth('student'));
+    assert.equal(denied.status, 403);
+    const anonymous = await request(app).get('/api/contact');
+    assert.equal(anonymous.status, 401);
+
+    const list = await request(app).get('/api/contact').set(auth('admin'));
+    assert.equal(list.status, 200);
+    assert.equal(list.body.count, 1);
+    assert.equal(list.body.messages[0].email, 'asha@example.com');
+  });
+
+  test('rejects missing, invalid and non-text fields', async () => {
+    for (const body of [
+      {},
+      { ...valid, email: 'not-an-email' },
+      { ...valid, message: 'short' },
+      { ...valid, message: 'x'.repeat(2001) },
+      { ...valid, name: { $ne: null } },
+    ]) {
+      const res = await request(app).post('/api/contact').send(body);
+      assert.equal(res.status, 400, JSON.stringify(body).slice(0, 80));
+    }
+  });
+
+  test('silently drops messages that fill in the hidden bot trap', async () => {
+    const res = await request(app).post('/api/contact').send({ ...valid, website: 'spam.example' });
+    assert.equal(res.status, 201);
+
+    const list = await request(app).get('/api/contact').set(auth('admin'));
+    assert.equal(list.body.count, 1, 'the bot message must not be stored');
+  });
+
+  test('the public form is rate limited', async () => {
+    const res = await request(app).post('/api/contact').send(valid);
+    assert.match(res.headers.ratelimit, /limit=50/);
   });
 });
 
