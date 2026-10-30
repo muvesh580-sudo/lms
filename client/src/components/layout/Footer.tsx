@@ -1,7 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../features/store';
+import { dashboardPath } from '../../services/config';
 
 const Footer: React.FC = () => {
+  const { user } = useSelector((state: RootState) => state.auth);
+
   return (
     <footer className="bg-gray-800 text-white">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -59,16 +64,26 @@ const Footer: React.FC = () => {
                   Browse Courses
                 </Link>
               </li>
-              <li>
-                <Link to="/login" className="text-gray-300 hover:text-white">
-                  Sign In
-                </Link>
-              </li>
-              <li>
-                <Link to="/register" className="text-gray-300 hover:text-white">
-                  Create Account
-                </Link>
-              </li>
+              {user ? (
+                <li>
+                  <Link to={dashboardPath(user.role)} className="text-gray-300 hover:text-white">
+                    {user.role === 'student' ? 'My Courses' : 'Dashboard'}
+                  </Link>
+                </li>
+              ) : (
+                <>
+                  <li>
+                    <Link to="/login" className="text-gray-300 hover:text-white">
+                      Sign In
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/register" className="text-gray-300 hover:text-white">
+                      Create Account
+                    </Link>
+                  </li>
+                </>
+              )}
               <li>
                 <Link to="#" className="text-gray-300 hover:text-white">
                   Pricing

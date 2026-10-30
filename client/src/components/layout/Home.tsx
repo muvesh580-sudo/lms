@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../features/store';
 import courseService, { Course } from '../../services/courseService';
+import { dashboardPath } from '../../services/config';
 import CourseCard from '../courses/CourseCard';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
 const Home: React.FC = () => {
+  const { user } = useSelector((state: RootState) => state.auth);
   const [featuredCourses, setFeaturedCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -44,11 +48,12 @@ const Home: React.FC = () => {
               >
                 Explore Courses
               </Link>
+              {/* Signed-in users go to their courses instead of being asked to sign up */}
               <Link
-                to="/register"
-                className="rounded-md border border-transparent bg-indigo-500 bg-opacity-20 px-8 py-3 text-base font-medium text-white hover:bg-opacity-30 md:py-4 md:px-10 md:text-lg"
+                to={user ? dashboardPath(user.role) : '/register'}
+                className="rounded-md border border-transparent bg-indigo-500 px-8 py-3 text-base font-medium text-white hover:bg-indigo-400 md:py-4 md:px-10 md:text-lg"
               >
-                Sign Up Free
+                {!user ? 'Sign Up Free' : user.role === 'student' ? 'My Courses' : 'Dashboard'}
               </Link>
             </div>
           </div>
