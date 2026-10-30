@@ -359,11 +359,11 @@ const CourseDetail: React.FC = () => {
                 <ul className="space-y-2">
                   <li className="flex items-center">
                     <CheckIcon />
-                    <span>Full lifetime access</span>
+                    <span>Learn at your own pace</span>
                   </li>
                   <li className="flex items-center">
                     <CheckIcon />
-                    <span>Access on mobile and TV</span>
+                    <span>Access on any device</span>
                   </li>
                   <li className="flex items-center">
                     <CheckIcon />
