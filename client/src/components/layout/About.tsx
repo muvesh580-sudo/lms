@@ -1,167 +1,144 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import {
-  AcademicCapIcon,
-  CodeBracketIcon,
-  CreditCardIcon,
-  LockClosedIcon,
-  MagnifyingGlassIcon,
-  PlayCircleIcon,
-  ShieldCheckIcon,
+  ClockIcon,
+  DevicePhoneMobileIcon,
+  EyeIcon,
+  RocketLaunchIcon,
+  Squares2X2Icon,
   StarIcon,
-  UserGroupIcon,
 } from '@heroicons/react/24/outline';
+import { RootState } from '../../features/store';
 
-const GITHUB_URL = 'https://github.com/muvesh580-sudo/lms';
-
-const features = [
+const reasons = [
   {
-    icon: MagnifyingGlassIcon,
-    title: 'Course catalogue',
-    text: 'Search by title, filter by category and level, and browse results page by page.',
+    icon: EyeIcon,
+    title: 'Try before you enroll',
+    text: 'Watch preview lectures for free and see if a course is right for you before you commit.',
   },
   {
-    icon: PlayCircleIcon,
-    title: 'Lecture player',
-    text: 'Preview lectures are open to everyone. Full lectures unlock after enrollment.',
+    icon: ClockIcon,
+    title: 'Learn at your own pace',
+    text: 'Start, pause and come back to your lectures whenever it suits your schedule.',
   },
   {
-    icon: CreditCardIcon,
-    title: 'Enrollment',
-    text: 'Free courses enroll instantly. Paid courses use a Razorpay checkout integration.',
+    icon: Squares2X2Icon,
+    title: 'Courses for every level',
+    text: 'Find courses from beginner to advanced across topics like web development, data science and design.',
+  },
+  {
+    icon: DevicePhoneMobileIcon,
+    title: 'Learn on any device',
+    text: 'Use it on your phone, tablet or computer, wherever you are.',
   },
   {
     icon: StarIcon,
-    title: 'Ratings and reviews',
-    text: 'Enrolled students can rate a course and leave a review.',
+    title: 'Honest reviews',
+    text: 'Ratings come only from students enrolled in the course, so you can choose with confidence.',
   },
   {
-    icon: UserGroupIcon,
-    title: 'Role-based accounts',
-    text: 'Separate student, instructor and admin roles, enforced by the API.',
-  },
-  {
-    icon: LockClosedIcon,
-    title: 'Protected content',
-    text: 'Paid videos and materials are served through short-lived links, never public URLs.',
+    icon: RocketLaunchIcon,
+    title: 'Everything in one place',
+    text: 'All your enrolled courses are saved in My Courses, so they are always easy to find.',
   },
 ];
 
-const stack = [
-  { area: 'Frontend', items: ['React 19', 'TypeScript', 'Vite', 'Redux Toolkit', 'React Router', 'Tailwind CSS'] },
-  { area: 'Backend', items: ['Node.js', 'Express', 'JWT authentication', 'Multer uploads', 'Razorpay'] },
-  { area: 'Database', items: ['MongoDB', 'Mongoose'] },
-  { area: 'Hosting', items: ['Vercel', 'Render', 'MongoDB Atlas'] },
-];
-
-const security = [
-  'Passwords are hashed with bcrypt, and roles can never be set from a sign-up request.',
-  'Payments are tied to the order and user that created them, and each order can be redeemed once.',
-  'Login is rate limited, and requests are checked against NoSQL injection.',
-  'Security headers and a restricted CORS policy protect the API.',
-  'Integration tests cover authentication, permissions, enrollment and payments.',
+const steps = [
+  { title: 'Find a course', text: 'Search by topic, or filter by category and level.' },
+  { title: 'Watch a preview', text: 'Get a feel for the course with its free preview lecture.' },
+  { title: 'Enroll', text: 'Join free courses instantly, or pay securely for paid ones.' },
+  { title: 'Start learning', text: 'Watch your lectures and rate the course when you are ready.' },
 ];
 
 const About: React.FC = () => {
+  const { user } = useSelector((state: RootState) => state.auth);
+
   return (
     <div className="bg-white">
       {/* Header */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 py-12 sm:py-16">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <p className="text-sm font-semibold uppercase tracking-wider text-indigo-200">About this project</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            A full-stack learning management system
+        <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-5xl">
+            Learning that fits your life
           </h1>
-          <p className="mt-4 text-lg text-indigo-100">
-            LMS is a portfolio project built with the MERN stack. Students can browse courses, enroll and watch
-            lectures, while the API handles roles, payments and access to paid content.
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-indigo-100">
+            We believe anyone can learn something new, given the right course and the freedom to go at their own pace.
           </p>
-          <div className="mt-8 flex flex-wrap gap-4">
-            <a
-              href={GITHUB_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center rounded-md bg-white px-5 py-3 text-base font-medium text-indigo-600 hover:bg-indigo-50"
-            >
-              <CodeBracketIcon className="mr-2 h-5 w-5" aria-hidden="true" />
-              View source on GitHub
-            </a>
-            <Link
-              to="/courses"
-              className="inline-flex items-center rounded-md bg-indigo-500 px-5 py-3 text-base font-medium text-white hover:bg-indigo-400"
-            >
-              Browse courses
-            </Link>
-          </div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-4xl space-y-12 px-4 py-12 sm:px-6 lg:px-8">
-        {/* Features */}
-        <section aria-labelledby="features-heading">
-          <h2 id="features-heading" className="text-2xl font-bold text-gray-900">
-            What it does
+      <div className="mx-auto max-w-5xl space-y-14 px-4 py-12 sm:px-6 lg:px-8">
+        {/* Mission */}
+        <section aria-labelledby="mission-heading" className="mx-auto max-w-3xl text-center">
+          <h2 id="mission-heading" className="text-2xl font-bold text-gray-900 sm:text-3xl">
+            Our mission
           </h2>
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {features.map(({ icon: Icon, title, text }) => (
-              <div key={title} className="rounded-lg border border-gray-200 p-5">
-                <Icon className="h-6 w-6 text-primary-600" aria-hidden="true" />
-                <h3 className="mt-3 font-semibold text-gray-900">{title}</h3>
-                <p className="mt-1 text-sm text-gray-600">{text}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Tech stack */}
-        <section aria-labelledby="stack-heading">
-          <h2 id="stack-heading" className="text-2xl font-bold text-gray-900">
-            Tech stack
-          </h2>
-          <dl className="mt-6 space-y-4">
-            {stack.map(({ area, items }) => (
-              <div key={area} className="sm:flex sm:items-baseline">
-                <dt className="w-28 flex-shrink-0 font-semibold text-gray-900">{area}</dt>
-                <dd className="mt-2 flex flex-wrap gap-2 sm:mt-0">
-                  {items.map((item) => (
-                    <span key={item} className="rounded-full bg-primary-50 px-3 py-1 text-sm text-primary-700">
-                      {item}
-                    </span>
-                  ))}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-
-        {/* Security */}
-        <section aria-labelledby="security-heading">
-          <h2 id="security-heading" className="text-2xl font-bold text-gray-900">
-            Security and testing
-          </h2>
-          <ul className="mt-6 space-y-3">
-            {security.map((item) => (
-              <li key={item} className="flex items-start">
-                <ShieldCheckIcon className="mr-3 h-5 w-5 flex-shrink-0 text-green-600" aria-hidden="true" />
-                <span className="text-gray-700">{item}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {/* Status */}
-        <section aria-labelledby="status-heading" className="rounded-lg bg-gray-50 p-6">
-          <div className="flex items-center">
-            <AcademicCapIcon className="mr-2 h-6 w-6 text-primary-600" aria-hidden="true" />
-            <h2 id="status-heading" className="text-xl font-bold text-gray-900">
-              Project status
-            </h2>
-          </div>
-          <p className="mt-3 text-gray-700">
-            The student experience is live. Instructor and admin features are available through the API, and their
-            dashboards are in progress. The courses here are demo data, and paid checkout needs Razorpay test keys.
+          <p className="mt-4 text-lg text-gray-600">
+            Our goal is to make learning simple. Whether you are starting something new or building on what you
+            already know, you should be able to find a good course, see what it offers, and start learning without
+            any hassle.
           </p>
         </section>
+
+        {/* Why learn here */}
+        <section aria-labelledby="why-heading">
+          <h2 id="why-heading" className="text-center text-2xl font-bold text-gray-900 sm:text-3xl">
+            Why learn with us
+          </h2>
+          <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {reasons.map(({ icon: Icon, title, text }) => (
+              <div key={title} className="rounded-lg border border-gray-200 p-6">
+                <div className="inline-flex rounded-md bg-primary-50 p-2">
+                  <Icon className="h-6 w-6 text-primary-600" aria-hidden="true" />
+                </div>
+                <h3 className="mt-4 text-lg font-semibold text-gray-900">{title}</h3>
+                <p className="mt-2 text-sm text-gray-600">{text}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* How it works */}
+        <section aria-labelledby="how-heading">
+          <h2 id="how-heading" className="text-center text-2xl font-bold text-gray-900 sm:text-3xl">
+            How it works
+          </h2>
+          <ol className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {steps.map(({ title, text }, index) => (
+              <li key={title} className="text-center">
+                <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-primary-600 font-semibold text-white">
+                  {index + 1}
+                </span>
+                <h3 className="mt-3 font-semibold text-gray-900">{title}</h3>
+                <p className="mt-1 text-sm text-gray-600">{text}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      </div>
+
+      {/* Call to action */}
+      <div className="bg-indigo-700">
+        <div className="mx-auto max-w-4xl px-4 py-12 text-center sm:px-6 lg:px-8">
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">Ready to start learning?</h2>
+          <div className="mt-6 flex flex-wrap justify-center gap-4">
+            <Link
+              to="/courses"
+              className="rounded-md bg-white px-6 py-3 text-base font-medium text-indigo-600 hover:bg-indigo-50"
+            >
+              Browse courses
+            </Link>
+            {!user && (
+              <Link
+                to="/register"
+                className="rounded-md bg-indigo-500 px-6 py-3 text-base font-medium text-white hover:bg-indigo-400"
+              >
+                Sign up free
+              </Link>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
