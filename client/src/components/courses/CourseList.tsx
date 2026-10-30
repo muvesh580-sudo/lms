@@ -11,7 +11,8 @@ const CourseList: React.FC = () => {
   const [error, setError] = useState('');
   const [totalPages, setTotalPages] = useState(1);
 
-  // Filter states
+  // Filter states. `searchText` is what is typed; `keyword` is what is searched for
+  const [searchText, setSearchText] = useState(searchParams.get('keyword') || '');
   const [keyword, setKeyword] = useState(searchParams.get('keyword') || '');
   const [category, setCategory] = useState(searchParams.get('category') || '');
   const [level, setLevel] = useState(searchParams.get('level') || '');
@@ -22,10 +23,25 @@ const CourseList: React.FC = () => {
   const categories = ['Web Development', 'Mobile Development', 'Data Science', 'Machine Learning', 'DevOps', 'Business', 'Design', 'Other'];
   const levels = ['Beginner', 'Intermediate', 'Advanced'];
 
+  // Search once typing pauses, instead of sending a request for every letter
   useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchText !== keyword) {
+        setKeyword(searchText);
+        setCurrentPage(1);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [searchText, keyword]);
+
+  useEffect(() => {
+    let cancelled = false;
+
     const fetchCourses = async () => {
       try {
         setLoading(true);
+        setError('');
         const filters: CourseFilter = {
           page: currentPage,
         };
@@ -35,16 +51,23 @@ const CourseList: React.FC = () => {
         if (level) filters.level = level;
 
         const response = await courseService.getCourses(filters);
+        // A newer search has started, so these results are out of date
+        if (cancelled) return;
         setCourses(response.courses);
         setTotalPages(response.pages);
         setLoading(false);
       } catch {
+        if (cancelled) return;
         setError('Failed to fetch courses. Please try again later.');
         setLoading(false);
       }
     };
 
     fetchCourses();
+
+    return () => {
+      cancelled = true;
+    };
   }, [keyword, category, level, currentPage]);
 
   useEffect(() => {
@@ -55,15 +78,18 @@ const CourseList: React.FC = () => {
     if (level) params.level = level;
     if (currentPage > 1) params.page = currentPage.toString();
 
-    setSearchParams(params);
+    // Replace, so the Back button leaves the page instead of undoing each search
+    setSearchParams(params, { replace: true });
   }, [keyword, category, level, currentPage, setSearchParams]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setKeyword(searchText); // Enter or Apply searches right away
     setCurrentPage(1); // Reset to first page on new search
   };
 
   const handleClearFilters = () => {
+    setSearchText('');
     setKeyword('');
     setCategory('');
     setLevel('');
@@ -74,8 +100,6 @@ const CourseList: React.FC = () => {
     setCurrentPage(page);
     window.scrollTo(0, 0);
   };
-
-  if (loading) return <LoadingSpinner />;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -94,8 +118,8 @@ const CourseList: React.FC = () => {
                   id="keyword"
                   className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
                   placeholder="Search courses..."
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
                 />
               </div>
 
@@ -107,7 +131,10 @@ const CourseList: React.FC = () => {
                   id="category"
                   className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
                   value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+                  onChange={(e) => {
+                    setCategory(e.target.value);
+                    setCurrentPage(1);
+                  }}
                 >
                   <option value="">All Categories</option>
                   {categories.map((cat) => (
@@ -126,7 +153,10 @@ const CourseList: React.FC = () => {
                   id="level"
                   className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
                   value={level}
-                  onChange={(e) => setLevel(e.target.value)}
+                  onChange={(e) => {
+                    setLevel(e.target.value);
+                    setCurrentPage(1);
+                  }}
                 >
                   <option value="">All Levels</option>
                   {levels.map((lvl) => (
@@ -155,9 +185,11 @@ const CourseList: React.FC = () => {
             </form>
           </div>
 
-          {/* Course Grid */}
-          <div className="w-full lg:w-3/4">
-            {error ? (
+          {/* Course Grid - only this area shows loading, so the search box keeps focus */}
+          <div className="w-full lg:w-3/4" aria-busy={loading}>
+            {loading && courses.length === 0 ? (
+              <LoadingSpinner />
+            ) : error ? (
               <div className="rounded-md bg-red-50 p-4">
                 <p className="text-sm text-red-700">{error}</p>
               </div>
@@ -169,7 +201,11 @@ const CourseList: React.FC = () => {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div
+                  className={`grid grid-cols-1 gap-6 transition-opacity sm:grid-cols-2 lg:grid-cols-3 ${
+                    loading ? 'opacity-60' : ''
+                  }`}
+                >
                   {courses.map((course) => (
                     <CourseCard key={course._id} course={course} />
                   ))}
