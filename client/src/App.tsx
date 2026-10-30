@@ -7,6 +7,7 @@ import { Role } from './services/config'
 import Layout from './components/layout/Layout'
 
 import Home from './components/layout/Home'
+import About from './components/layout/About'
 import Login from './components/auth/Login'
 import Register from './components/auth/Register'
 
@@ -51,7 +52,7 @@ function App() {
         <Route path="register" element={<Register />} />
         <Route path="courses" element={<CourseList />} />
         <Route path="courses/:id" element={<CourseDetail />} />
-        <Route path="about" element={<div className="p-10 text-center">About Page</div>} />
+        <Route path="about" element={<About />} />
         <Route path="contact" element={<div className="p-10 text-center">Contact Page</div>} />
 
         {/* Student routes */}
