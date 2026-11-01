@@ -181,6 +181,13 @@ export const updateCourse = async (req, res, next) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
+    // Students should never open a published course with nothing to watch
+    const publishing = !course.published && toBoolean(published);
+    if (publishing && !(await Lecture.exists({ course: course._id }))) {
+      removeUploadedFile(req.file);
+      return res.status(400).json({ message: 'Add at least one lecture before publishing this course' });
+    }
+
     // Update course fields
     course.title = title || course.title;
     course.description = description || course.description;

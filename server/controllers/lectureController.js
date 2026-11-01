@@ -267,6 +267,13 @@ export const deleteLecture = async (req, res, next) => {
     await lecture.deleteOne();
     removeStoredFile(uploadDirs.videos, lecture.videoUrl);
     lecture.resources.forEach((r) => removeStoredFile(uploadDirs.materials, r.fileUrl));
+
+    // A course left with no lectures goes back to draft
+    if (course.published && !(await Lecture.exists({ course: course._id }))) {
+      course.published = false;
+      await course.save();
+    }
+
     res.json({ message: 'Lecture removed' });
   } catch (error) {
     next(error);

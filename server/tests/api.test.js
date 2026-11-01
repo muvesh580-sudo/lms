@@ -614,6 +614,96 @@ describe('payments', () => {
   });
 });
 
+describe('publishing rules', () => {
+  const addLecture = async (course, title) => {
+    const res = await request(app)
+      .post('/api/lectures')
+      .set(auth('teacher'))
+      .send({
+        title,
+        description: 'desc',
+        course,
+        duration: 5,
+        order: 1,
+        videoUrl: 'https://videos.example/clip.mp4',
+      });
+    assert.equal(res.status, 201, JSON.stringify(res.body));
+    return res.body._id;
+  };
+
+  const publish = (course, published = 'true') =>
+    request(app).put(`/api/courses/${course}`).set(auth('teacher')).send({ published });
+
+  test('a course cannot be published until it has a lecture', async () => {
+    const created = await request(app)
+      .post('/api/courses')
+      .set(auth('teacher'))
+      .send({
+        title: 'Rules course',
+        description: 'desc',
+        price: 0,
+        category: 'Other',
+        level: 'Beginner',
+        duration: '1 hour',
+      });
+    ids.rulesCourse = created.body._id;
+
+    const empty = await publish(ids.rulesCourse);
+    assert.equal(empty.status, 400);
+    assert.match(empty.body.message, /lecture/i);
+
+    const stored = await request(app).get(`/api/courses/${ids.rulesCourse}`).set(auth('teacher'));
+    assert.equal(stored.body.published, false);
+
+    ids.rulesLecture = await addLecture(ids.rulesCourse, 'First lecture');
+    const ok = await publish(ids.rulesCourse);
+    assert.equal(ok.status, 200);
+    assert.equal(ok.body.published, true);
+  });
+
+  test('other course edits still save while the course is a draft with no lectures', async () => {
+    const created = await request(app)
+      .post('/api/courses')
+      .set(auth('teacher'))
+      .send({
+        title: 'Empty draft',
+        description: 'desc',
+        price: 0,
+        category: 'Other',
+        level: 'Beginner',
+        duration: '1 hour',
+      });
+
+    const edit = await request(app)
+      .put(`/api/courses/${created.body._id}`)
+      .set(auth('teacher'))
+      .send({ title: 'Renamed draft', published: 'false' });
+    assert.equal(edit.status, 200);
+    assert.equal(edit.body.title, 'Renamed draft');
+  });
+
+  test('deleting one of several lectures keeps the course published', async () => {
+    const second = await addLecture(ids.rulesCourse, 'Second lecture');
+    const res = await request(app).delete(`/api/lectures/${second}`).set(auth('teacher'));
+    assert.equal(res.status, 200);
+
+    const course = await request(app).get(`/api/courses/${ids.rulesCourse}`);
+    assert.equal(course.status, 200);
+    assert.equal(course.body.published, true);
+  });
+
+  test('deleting the last lecture moves a published course back to draft', async () => {
+    const res = await request(app).delete(`/api/lectures/${ids.rulesLecture}`).set(auth('teacher'));
+    assert.equal(res.status, 200);
+
+    const hidden = await request(app).get(`/api/courses/${ids.rulesCourse}`);
+    assert.equal(hidden.status, 401);
+
+    const course = await request(app).get(`/api/courses/${ids.rulesCourse}`).set(auth('teacher'));
+    assert.equal(course.body.published, false);
+  });
+});
+
 describe('course deletion', () => {
   test('deleting a course removes its lectures and enrollments', async () => {
     const res = await request(app).delete(`/api/courses/${ids.freeCourse}`).set(auth('teacher'));
