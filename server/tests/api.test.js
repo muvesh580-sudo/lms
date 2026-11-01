@@ -124,6 +124,63 @@ describe('authentication', () => {
     assert.equal(bad.status, 401);
   });
 
+  test('changing a password needs the current password', async () => {
+    await register('changer');
+    const change = (body) => request(app).put('/api/users/profile').set(auth('changer')).send(body);
+    const login = (password) =>
+      request(app).post('/api/users/login').send({ email: 'changer@test.dev', password });
+
+    // 400, not 401: the client treats a 401 as an expired session and logs the user out
+    assert.equal((await change({ password: 'newpass123' })).status, 400);
+    assert.equal((await change({ password: 'newpass123', currentPassword: 'wrong-pass' })).status, 400);
+    assert.equal((await change({ password: 'newpass123', currentPassword: { $ne: 1 } })).status, 400);
+    assert.equal((await login('secret123')).status, 200, 'a rejected change must keep the old password');
+
+    assert.equal((await change({ password: 'short', currentPassword: 'secret123' })).status, 400);
+
+    const ok = await change({ password: 'newpass123', currentPassword: 'secret123' });
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    assert.equal((await login('newpass123')).status, 200);
+    assert.equal((await login('secret123')).status, 401);
+  });
+
+  test('a rejected password change does not save the other fields', async () => {
+    await register('partial');
+    const res = await request(app)
+      .put('/api/users/profile')
+      .set(auth('partial'))
+      .send({ name: 'Changed', password: 'newpass123', currentPassword: 'wrong-pass' });
+    assert.equal(res.status, 400);
+
+    const profile = await request(app).get('/api/users/profile').set(auth('partial'));
+    assert.equal(profile.body.name, 'partial');
+  });
+
+  test('profile photo is saved and returned at login', async () => {
+    await register('photo');
+    const upload = await request(app)
+      .put('/api/users/profile')
+      .set(auth('photo'))
+      .attach('profilePic', Buffer.from('fake image bytes'), 'me.png');
+    assert.equal(upload.status, 200, JSON.stringify(upload.body));
+    assert.match(upload.body.profilePic, /^profile-.+\.png$/);
+
+    const login = await request(app)
+      .post('/api/users/login')
+      .send({ email: 'photo@test.dev', password: 'secret123' });
+    assert.equal(login.body.profilePic, upload.body.profilePic);
+  });
+
+  test('profile rejects an email that is already taken', async () => {
+    await register('emailowner');
+    await register('emailtaker');
+    const res = await request(app)
+      .put('/api/users/profile')
+      .set(auth('emailtaker'))
+      .send({ email: 'emailowner@test.dev' });
+    assert.equal(res.status, 400);
+  });
+
   test('saving a user without changing the password keeps the login working', async () => {
     const res = await request(app)
       .put('/api/users/profile')

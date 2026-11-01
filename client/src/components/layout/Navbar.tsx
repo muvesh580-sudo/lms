@@ -2,10 +2,10 @@ import React, { Fragment } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../features/store';
-import { API_ORIGIN } from '../../services/config';
 import { logout } from '../../features/auth/authSlice';
 import { Disclosure, Menu, Transition } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
+import Avatar from '../ui/Avatar';
 
 const navigation = [
   { name: 'Home', href: '/' },
@@ -24,8 +24,6 @@ const Navbar: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const isAuthenticated = !!user;
 
-  const hasAvatar = user?.profilePic && !user.profilePic.startsWith('default-');
-
   const handleLogout = async () => {
     // Wait for the user to be cleared first; otherwise the login page still sees
     // the old user and bounces through /my-courses with an unauthenticated request
@@ -38,17 +36,7 @@ const Navbar: React.FC = () => {
       <div>
         <Menu.Button className="flex rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
           <span className="sr-only">Open user menu</span>
-          {hasAvatar ? (
-            <img
-              className="h-8 w-8 rounded-full object-cover"
-              src={`${API_ORIGIN}/uploads/profile/${user!.profilePic}`}
-              alt=""
-            />
-          ) : (
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 font-semibold text-white">
-              {user?.name?.charAt(0).toUpperCase()}
-            </span>
-          )}
+          <Avatar name={user?.name} profilePic={user?.profilePic} />
         </Menu.Button>
       </div>
       <Transition

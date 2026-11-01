@@ -11,6 +11,7 @@ import About from './components/layout/About'
 import Contact from './components/layout/Contact'
 import Login from './components/auth/Login'
 import Register from './components/auth/Register'
+import Profile from './components/auth/Profile'
 
 import CourseList from './components/courses/CourseList'
 import CourseDetail from './components/courses/CourseDetail'
@@ -70,7 +71,7 @@ function App() {
         <Route path="learn/lecture/:id" element={<LectureView />} />
         <Route path="profile" element={
           <StudentRoute>
-            <div className="p-10 text-center">User Profile</div>
+            <Profile />
           </StudentRoute>
         } />
 

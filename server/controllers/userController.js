@@ -73,6 +73,7 @@ export const loginUser = async (req, res, next) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        profilePic: user.profilePic,
         token: generateToken(user._id),
       });
     } else {
@@ -116,15 +117,25 @@ export const getUserProfile = async (req, res, next) => {
 // @access  Private
 export const updateUserProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id).select('+password');
 
     if (user) {
+      const password = str(req.body.password);
+      const currentPassword = str(req.body.currentPassword);
+
+      // A signed-in session alone must not be enough to take over the account.
+      // 400, not 401: the client treats a 401 as an expired session
+      if (password && !(currentPassword && (await user.matchPassword(currentPassword)))) {
+        removeUploadedFile(req.file);
+        return res.status(400).json({ message: 'Your current password is incorrect' });
+      }
+
       user.name = str(req.body.name) || user.name;
       user.email = str(req.body.email) || user.email;
 
       // Update password if provided
-      if (str(req.body.password)) {
-        user.password = req.body.password;
+      if (password) {
+        user.password = password;
       }
 
       // Update profile picture if uploaded

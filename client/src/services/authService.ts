@@ -67,8 +67,12 @@ const authService = {
   },
 
   // Update user profile
-  updateProfile: async (userData: FormData | Partial<RegisterData>): Promise<UserResponse> => {
-    const response = await api.put('/users/profile', userData);
+  updateProfile: async (userData: FormData): Promise<UserResponse> => {
+    const response = await api.put('/users/profile', userData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     if (response.data) {
       localStorage.setItem('user', JSON.stringify(response.data));
       localStorage.setItem('token', response.data.token);

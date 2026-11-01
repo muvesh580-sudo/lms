@@ -61,6 +61,10 @@ export const authSlice = createSlice({
       state.isError = false;
       state.message = '';
     },
+    // Keep the navbar in step after the profile page saves
+    setUser: (state, action: PayloadAction<UserResponse>) => {
+      state.user = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -101,5 +105,5 @@ export const authSlice = createSlice({
   },
 });
 
-export const { reset } = authSlice.actions;
+export const { reset, setUser } = authSlice.actions;
 export default authSlice.reducer;
