@@ -94,6 +94,7 @@ export const removeUploadedFile = (file) => {
 
 // Delete a previously stored file by name, staying inside its directory
 export const removeStoredFile = (dir, filename) => {
-  if (!filename || filename.startsWith('default-')) return;
+  // Hosted video links are not local files
+  if (!filename || filename.startsWith('default-') || /^https?:\/\//.test(filename)) return;
   fs.promises.unlink(path.join(dir, path.basename(filename))).catch(() => {});
 };

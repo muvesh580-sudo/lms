@@ -11,6 +11,17 @@ import { getCourseAccess, toLectureResponse, verifyMediaToken } from '../utils/c
 
 const RESOURCE_TYPES = ['pdf', 'doc', 'ppt', 'zip', 'other'];
 
+// Hosted videos must be plain http(s) links, since they end up in a <video> tag
+const parseVideoLink = (value) => {
+  if (typeof value !== 'string') return null;
+  try {
+    const url = new URL(value.trim());
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : null;
+  } catch {
+    return null;
+  }
+};
+
 // Load a lecture together with its course, or send the matching 404
 const findLectureWithCourse = async (lectureId, res) => {
   const lecture = await Lecture.findById(lectureId);
@@ -51,9 +62,10 @@ export const createLecture = async (req, res, next) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
-    // Make sure a video was uploaded
-    if (!req.file) {
-      return res.status(400).json({ message: 'Please upload a video file' });
+    // Make sure a video was uploaded or linked
+    const videoLink = parseVideoLink(req.body.videoUrl);
+    if (!req.file && !videoLink) {
+      return res.status(400).json({ message: 'Please upload a video file or add a valid video link' });
     }
 
     // Create the lecture
@@ -61,7 +73,7 @@ export const createLecture = async (req, res, next) => {
       title,
       description,
       course,
-      videoUrl: req.file.filename,
+      videoUrl: req.file ? req.file.filename : videoLink,
       duration: Number(duration),
       order: Number(order),
       isPreview: isPreview === 'true' || isPreview === true,
@@ -207,6 +219,12 @@ export const updateLecture = async (req, res, next) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
+    const videoLink = parseVideoLink(req.body.videoUrl);
+    if (req.body.videoUrl && !videoLink) {
+      removeUploadedFile(req.file);
+      return res.status(400).json({ message: 'Please add a valid video link' });
+    }
+
     // Update lecture fields
     lecture.title = title || lecture.title;
     lecture.description = description || lecture.description;
@@ -215,14 +233,15 @@ export const updateLecture = async (req, res, next) => {
     lecture.isPreview =
       isPreview !== undefined ? isPreview === 'true' || isPreview === true : lecture.isPreview;
 
-    // Update video if uploaded
+    // Update video if a new file or link was sent
     const oldVideo = lecture.videoUrl;
-    if (req.file) {
-      lecture.videoUrl = req.file.filename;
+    const newVideo = req.file ? req.file.filename : videoLink;
+    if (newVideo) {
+      lecture.videoUrl = newVideo;
     }
 
     const updatedLecture = await lecture.save();
-    if (req.file) {
+    if (newVideo) {
       removeStoredFile(uploadDirs.videos, oldVideo);
     }
     res.json(toLectureResponse(updatedLecture, { unlocked: true, userId: req.user._id }));

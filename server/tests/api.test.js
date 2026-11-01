@@ -228,6 +228,23 @@ describe('courses and lectures', () => {
     assert.equal(del.status, 403);
   });
 
+  test('instructor creates a draft course for hosted lectures', async () => {
+    const res = await request(app)
+      .post('/api/courses')
+      .set(auth('teacher'))
+      .send({
+        title: 'Hosted video course',
+        description: 'desc',
+        price: 0,
+        category: 'Other',
+        level: 'Beginner',
+        duration: '1 hour',
+      });
+    assert.equal(res.status, 201, JSON.stringify(res.body));
+    assert.equal(res.body.published, false);
+    ids.draftLinkCourse = res.body._id;
+  });
+
   test('instructor adds a preview and a locked lecture with a video upload', async () => {
     for (const [title, order, isPreview] of [
       ['Preview lecture', 1, 'true'],
@@ -249,6 +266,75 @@ describe('courses and lectures', () => {
         if (courseKey === 'paidCourse') ids[order === 1 ? 'previewLecture' : 'lockedLecture'] = res.body._id;
       }
     }
+  });
+
+  test('instructor can add a lecture from a hosted video link', async () => {
+    const res = await request(app)
+      .post('/api/lectures')
+      .set(auth('teacher'))
+      .send({
+        title: 'Hosted lecture',
+        description: 'desc',
+        course: ids.draftLinkCourse,
+        duration: 5,
+        order: 1,
+        videoUrl: 'https://videos.example/clip.mp4',
+      });
+    assert.equal(res.status, 201, JSON.stringify(res.body));
+    assert.equal(res.body.videoStreamUrl, 'https://videos.example/clip.mp4');
+    ids.linkLecture = res.body._id;
+  });
+
+  test('a lecture needs a video file or a safe http(s) link', async () => {
+    const base = { title: 'No video', description: 'desc', course: ids.draftLinkCourse, duration: 5, order: 2 };
+
+    for (const videoUrl of [undefined, 'not a link', 'javascript:alert(1)', { $ne: 1 }]) {
+      const res = await request(app).post('/api/lectures').set(auth('teacher')).send({ ...base, videoUrl });
+      assert.equal(res.status, 400, JSON.stringify(videoUrl));
+    }
+  });
+
+  test('instructor can replace a lecture video link, but not with an unsafe one', async () => {
+    const bad = await request(app)
+      .put(`/api/lectures/${ids.linkLecture}`)
+      .set(auth('teacher'))
+      .send({ videoUrl: 'javascript:alert(1)' });
+    assert.equal(bad.status, 400);
+
+    const good = await request(app)
+      .put(`/api/lectures/${ids.linkLecture}`)
+      .set(auth('teacher'))
+      .send({ videoUrl: 'https://videos.example/new.mp4' });
+    assert.equal(good.status, 200);
+    assert.equal(good.body.videoStreamUrl, 'https://videos.example/new.mp4');
+  });
+
+  test('another instructor cannot add a video link to the course', async () => {
+    const res = await request(app)
+      .post('/api/lectures')
+      .set(auth('otherteacher'))
+      .send({
+        title: 'Intruder',
+        description: 'desc',
+        course: ids.draftLinkCourse,
+        duration: 5,
+        order: 3,
+        videoUrl: 'https://videos.example/clip.mp4',
+      });
+    assert.equal(res.status, 403);
+  });
+
+  test('instructors and admins can list the courses they own', async () => {
+    const teacher = await request(app).get('/api/courses/instructor/courses').set(auth('teacher'));
+    assert.equal(teacher.status, 200);
+    assert.ok(teacher.body.some((c) => c._id === ids.draftLinkCourse));
+
+    const admin = await request(app).get('/api/courses/instructor/courses').set(auth('admin'));
+    assert.equal(admin.status, 200);
+    assert.ok(!admin.body.some((c) => c._id === ids.draftLinkCourse));
+
+    const student = await request(app).get('/api/courses/instructor/courses').set(auth('student'));
+    assert.equal(student.status, 403);
   });
 
   test('rejects uploads with a disallowed file type', async () => {

@@ -1,6 +1,20 @@
 import api from './api';
 import { Lecture } from './lectureService';
 
+// Allowed values (match server/models/courseModel.js)
+export const COURSE_CATEGORIES = [
+  'Web Development',
+  'Mobile Development',
+  'Data Science',
+  'Machine Learning',
+  'DevOps',
+  'Business',
+  'Design',
+  'Other',
+] as const;
+
+export const COURSE_LEVELS = ['Beginner', 'Intermediate', 'Advanced'] as const;
+
 // Types
 export interface Course {
   _id: string;

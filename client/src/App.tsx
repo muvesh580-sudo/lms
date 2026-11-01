@@ -16,6 +16,9 @@ import CourseList from './components/courses/CourseList'
 import CourseDetail from './components/courses/CourseDetail'
 import MyCourses from './components/student/MyCourses'
 import LectureView from './components/student/LectureView'
+import InstructorDashboard from './components/instructor/InstructorDashboard'
+import CourseForm from './components/instructor/CourseForm'
+import CourseLectures from './components/instructor/CourseLectures'
 
 // Route guards only improve UX - the API enforces the same rules server-side
 const RoleRoute = ({ children, roles }: { children: JSX.Element; roles?: Role[] }) => {
@@ -74,27 +77,23 @@ function App() {
         {/* Instructor routes */}
         <Route path="instructor/dashboard" element={
           <InstructorRoute>
-            <div className="p-10 text-center">Instructor Dashboard</div>
+            <InstructorDashboard />
           </InstructorRoute>
         } />
-        <Route path="instructor/courses" element={
-          <InstructorRoute>
-            <div className="p-10 text-center">Instructor Courses</div>
-          </InstructorRoute>
-        } />
+        <Route path="instructor/courses" element={<Navigate to="/instructor/dashboard" replace />} />
         <Route path="instructor/courses/create" element={
           <InstructorRoute>
-            <div className="p-10 text-center">Create Course</div>
+            <CourseForm />
           </InstructorRoute>
         } />
         <Route path="instructor/courses/:id/edit" element={
           <InstructorRoute>
-            <div className="p-10 text-center">Edit Course</div>
+            <CourseForm />
           </InstructorRoute>
         } />
         <Route path="instructor/courses/:courseId/lectures" element={
           <InstructorRoute>
-            <div className="p-10 text-center">Course Lectures</div>
+            <CourseLectures />
           </InstructorRoute>
         } />
 

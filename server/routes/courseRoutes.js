@@ -16,7 +16,7 @@ import { uploadThumbnail } from '../middleware/uploadMiddleware.js';
 const router = express.Router();
 
 // Static paths are registered before `/:id` so they are never captured by it
-router.get('/instructor/courses', protect, authorize('instructor'), getInstructorCourses);
+router.get('/instructor/courses', protect, authorize('instructor', 'admin'), getInstructorCourses);
 router.get('/admin/courses', protect, authorize('admin'), getAdminCourses);
 
 // Public routes (a logged-in instructor/admin can also see unpublished courses)

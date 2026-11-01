@@ -341,8 +341,12 @@ const CourseDetail: React.FC = () => {
               )}
 
               {course.canManage ? (
-                <Button variant="secondary" fullWidth disabled>
-                  You manage this course
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => navigate(`/instructor/courses/${course._id}/lectures`)}
+                >
+                  Manage this course
                 </Button>
               ) : enrolled ? (
                 <Button variant="success" fullWidth disabled>
