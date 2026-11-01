@@ -7,6 +7,7 @@ import courseService, { CourseDetails } from '../../services/courseService';
 import lectureService, { Lecture } from '../../services/lectureService';
 import { errorMessage } from '../../services/config';
 import Button from '../ui/Button';
+import ConfirmDialog from '../ui/ConfirmDialog';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
 // Form validation schema (matches server/models/lectureModel.js)
@@ -40,6 +41,7 @@ const CourseLectures: React.FC = () => {
   const [busy, setBusy] = useState(false);
   // The lecture being edited; null means the form adds a new one
   const [editing, setEditing] = useState<Lecture | null>(null);
+  const [lectureToDelete, setLectureToDelete] = useState<Lecture | null>(null);
   const [videoSource, setVideoSource] = useState<VideoSource>('link');
   const [videoFile, setVideoFile] = useState<File | null>(null);
   // Changing the key clears the file input, which React cannot do through state
@@ -145,8 +147,9 @@ const CourseLectures: React.FC = () => {
     }
   };
 
-  const handleDelete = async (lecture: Lecture) => {
-    if (!window.confirm(`Delete "${lecture.title}"? This cannot be undone.`)) return;
+  const handleDelete = async () => {
+    if (!lectureToDelete) return;
+    const lecture = lectureToDelete;
 
     setError('');
     setBusy(true);
@@ -158,6 +161,7 @@ const CourseLectures: React.FC = () => {
       setError(errorMessage(err, 'Failed to delete the lecture.'));
     } finally {
       setBusy(false);
+      setLectureToDelete(null);
     }
   };
 
@@ -284,7 +288,7 @@ const CourseLectures: React.FC = () => {
                 <Button variant="outline" size="sm" disabled={busy} onClick={() => startEditing(lecture)}>
                   Edit
                 </Button>
-                <Button variant="danger" size="sm" disabled={busy} onClick={() => handleDelete(lecture)}>
+                <Button variant="danger" size="sm" disabled={busy} onClick={() => setLectureToDelete(lecture)}>
                   Delete
                 </Button>
               </div>
@@ -409,6 +413,16 @@ const CourseLectures: React.FC = () => {
           )}
         </div>
       </form>
+
+      <ConfirmDialog
+        open={!!lectureToDelete}
+        title="Delete this lecture?"
+        message={`"${lectureToDelete?.title}" will be removed from the course. This cannot be undone.`}
+        confirmLabel="Delete lecture"
+        disabled={busy}
+        onConfirm={handleDelete}
+        onCancel={() => setLectureToDelete(null)}
+      />
     </div>
   );
 };

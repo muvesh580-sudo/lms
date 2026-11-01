@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import courseService, { Course } from '../../services/courseService';
 import { errorMessage, thumbnailUrl, PLACEHOLDER_IMAGE } from '../../services/config';
 import Button from '../ui/Button';
+import ConfirmDialog from '../ui/ConfirmDialog';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
 const linkClasses =
@@ -14,6 +15,7 @@ const InstructorDashboard: React.FC = () => {
   const [error, setError] = useState('');
   // Id of the course a publish or delete is running for
   const [busyId, setBusyId] = useState('');
+  const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,10 +54,9 @@ const InstructorDashboard: React.FC = () => {
     }
   };
 
-  const handleDelete = async (course: Course) => {
-    if (!window.confirm(`Delete "${course.title}" and all of its lectures? This cannot be undone.`)) {
-      return;
-    }
+  const handleDelete = async () => {
+    if (!courseToDelete) return;
+    const course = courseToDelete;
 
     setError('');
     setBusyId(course._id);
@@ -66,6 +67,7 @@ const InstructorDashboard: React.FC = () => {
       setError(errorMessage(err, 'Failed to delete the course.'));
     } finally {
       setBusyId('');
+      setCourseToDelete(null);
     }
   };
 
@@ -163,7 +165,7 @@ const InstructorDashboard: React.FC = () => {
                   variant="danger"
                   size="sm"
                   disabled={busyId === course._id}
-                  onClick={() => handleDelete(course)}
+                  onClick={() => setCourseToDelete(course)}
                 >
                   Delete
                 </Button>
@@ -172,6 +174,16 @@ const InstructorDashboard: React.FC = () => {
           ))}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={!!courseToDelete}
+        title="Delete this course?"
+        message={`"${courseToDelete?.title}" and all of its lectures will be removed. This cannot be undone.`}
+        confirmLabel="Delete course"
+        disabled={!!busyId}
+        onConfirm={handleDelete}
+        onCancel={() => setCourseToDelete(null)}
+      />
     </div>
   );
 };
