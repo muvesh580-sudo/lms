@@ -22,6 +22,9 @@ export const thumbnailUrl = (thumbnail?: string) =>
 // Read the server's error message from an axios error
 export const errorMessage = (error: unknown, fallback = 'Something went wrong') => {
   const err = error as { response?: { data?: { message?: string } }; message?: string };
+  if (err?.message === 'Network Error' && !err.response) {
+    return 'Could not reach the server. Please check your connection and try again.';
+  }
   return err?.response?.data?.message || err?.message || fallback;
 };
 

@@ -780,6 +780,12 @@ test('hosted video links are played directly, but stay hidden on locked lectures
   assert.equal(locked.videoUrl, undefined);
 });
 
+test('health check answers without logging in', async () => {
+  const res = await request(app).get('/api/health');
+  assert.equal(res.status, 200);
+  assert.equal(res.body.status, 'ok');
+});
+
 test('unknown API routes return JSON 404', async () => {
   const res = await request(app).get('/api/does-not-exist');
   assert.equal(res.status, 404);

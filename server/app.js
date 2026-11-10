@@ -54,6 +54,12 @@ app.use('/api/users/register', authLimiter);
 app.use('/uploads/thumbnails', express.static(uploadDirs.thumbnails));
 app.use('/uploads/profile', express.static(uploadDirs.profile));
 
+// Cheap check the client polls while a sleeping free-tier host starts up
+app.get('/api/health', (req, res) => {
+  const connected = mongoose.connection.readyState === 1;
+  res.status(connected ? 200 : 503).json({ status: connected ? 'ok' : 'starting' });
+});
+
 // API Routes
 app.use('/api/users', userRoutes);
 app.use('/api/courses', courseRoutes);

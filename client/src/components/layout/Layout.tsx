@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import ServerWakingNotice from './ServerWakingNotice';
 
 const Layout: React.FC = () => {
   const { pathname } = useLocation();
@@ -14,6 +15,7 @@ const Layout: React.FC = () => {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
+      <ServerWakingNotice />
       <main className="flex-grow">
         <Outlet />
       </main>
